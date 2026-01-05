@@ -34,33 +34,41 @@ public:
     ~HashTable() {
         delete[] table;
     }
-
+    
     void insert(std::string key, V value) {
-        int pos = h(key);
-        TableEntry<V> te(key);
-        if (table[pos].search(te))
-            throw std::runtime_error("Clave duplicada");
-        table[pos].insert(TableEntry<V>(key, value));
-        n++;
+    int pos = h(key);
+    TableEntry<V> te(key);
+
+    if (table[pos].search(te) != -1)
+        throw std::runtime_error("Key '" + key + "' already exists!");
+
+    table[pos].append(TableEntry<V>(key, value));
+    n++;
     }
 
     V search(std::string key) {
-        int pos = h(key);
-        TableEntry<V> te(key);
-        if (!table[pos].search(te))
-            throw std::runtime_error("Clave no encontrada");
-        return table[pos].search(te).value;
-    }
+    int pos = h(key);
+    TableEntry<V> te(key);
 
+    int idx = table[pos].search(te);
+    if (idx == -1)
+        throw std::runtime_error("Key '" + key + "' not found!");
+
+    return table[pos].get(idx).value;
+    }
+    
     V remove(std::string key) {
-        int pos = h(key);
-        TableEntry<V> te(key);
-        if (!table[pos].search(te))
-            throw std::runtime_error("Clave no encontrada");
-        V val = table[pos].search(te).value;
-        table[pos].remove(te);
-        n--;
-        return val;
+    int pos = h(key);
+    TableEntry<V> te(key);
+
+    int idx = table[pos].search(te);
+    if (idx == -1)
+        throw std::runtime_error("Key '" + key + "' not found!");
+
+    V val = table[pos].get(idx).value;
+    table[pos].remove(idx);
+    n--;
+    return val;
     }
 
     int entries() {
@@ -74,14 +82,24 @@ public:
     V operator[](std::string key) {
         return search(key);
     }
+    friend std::ostream& operator<<(std::ostream& os, const HashTable<V>& ht) {
+    os << "HashTable [entries: " << ht.n << ", capacity: " << ht.max << "]\n";
+    os << "==============\n";
+    for (int i = 0; i < ht.max; ++i) {
+        os << "== Cubeta " << i << " ==\nList => [";
 
-    friend std::ostream& operator<<(std::ostream &out, const HashTable<V> &th) {
-        for (int i = 0; i < th.max; i++) {
-            out << i << ": " << th.table[i] << "\n";
+        // Imprimir los elementos de la lista en la cubeta i
+        for (int j = 0; j < ht.table[i].size(); ++j) {
+            TableEntry<V> e = ht.table[i].get(j);
+            os << "('" << e.key << "' => " << e.value << ")";
+            if (j != ht.table[i].size() - 1) os << " ";
         }
-        return out;
+
+        os << "]\n\n";
     }
+    os << "==============\n";
+    return os;
+}
 };
 
 #endif
-
